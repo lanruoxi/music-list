@@ -1,6 +1,8 @@
 'use strict';
 // 引入数据库操作db对象
 const db = require('../models/db');
+//引入生成验证码的对象
+const captchapng = require('captchapng2');
 let userController = {
 
 };
@@ -62,6 +64,11 @@ userController.doRegister = (req,res,next)=>{
     let email = userData.email;
     //2:处理数据(验证)
     //2.1:验证验证码（暂留）
+    if(v_code != req.session.v_code){
+       return res.json({
+        code:'003',msg:'验证码不正确'
+       })
+    }
     //2.2:验证邮箱
     let regex = /^(\w)+(\.\w+)*@(\w)+((\.\w+)+)$/;
     if(!regex.test(email)){
@@ -135,27 +142,56 @@ userController.doLogin = (req,res,next)=>{
             code:'001',msg:'登录成功'
         })
     })};
-
-// 退出
-userController.logout = (req, res, next)=> {
+/**
+ * [退出]
+ * @param  {[type]}   req  [description]
+ * @param  {[type]}   res  [description]
+ * @param  {Function} next [description]
+ * @return {[type]}        [description]
+ */
+userController.logout = (req,res,next)=>{
+    //从session中删除user
     req.session.user = null;
     res.json({
-        code: '001',
-        msg: '退出成功'
+        code:'001',
+        msg:'退出成功'
     });
 }
-
-//显示登录页
-userController.showLogin = (req, res, next)=>{
+/**
+ * [显示登录页]
+ * @param  {[type]}   req  [description]
+ * @param  {[type]}   res  [description]
+ * @param  {Function} next [description]
+ * @return {[type]}        [description]
+ */
+userController.showLogin = (req,res,next)=>{
     res.render('login.html');
 }
-
-//显示注册页
-userController.showRegister = (req, res, next)=> {
+/**
+ * [显示注册页]
+ * @param  {[type]}   req  [description]
+ * @param  {[type]}   res  [description]
+ * @param  {Function} next [description]
+ * @return {[type]}        [description]
+ */
+userController.showRegister = (req,res,next)=>{
     res.render('register.html');
 }
 
 
+userController.getCaptcha = (req,res,next)=>{
+
+    //生成答案
+    let rand = parseInt(Math.random() * 9000 + 1000);
+    //生成图片对象
+    let png = new captchapng(80, 30, rand); // width,height, numeric captcha 
+    //将答案存储在session中，供注册的时候取出做对比
+    req.session.v_code = rand+'';
+    //给img标签响应图片数据
+    res.send(png.getBuffer());
+
+
+}
 
 
 //向外导出
